@@ -38,15 +38,27 @@ app.use(logger('dev'));
         res.sendFile(process.cwd() + '/client/index.html');
     });
 
-    app.post('/submit-form', async (req, res) => {
-        const formData = req.body;
-
-        // Insertar datos en la base de datos
-        await db.execute('INSERT INTO form_info (firstname, lastname, email, contactnumber, message) VALUES (?, ?, ?, ?, ?)', 
+    app.post('/submit', async (req, res) => {
+        try {
+          const errors = validationResult(req);
+          if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+          }
+      
+          const formData = req.body;
+      
+          await db.execute('INSERT INTO form_info (firstname, lastname, email, contactnumber, message) VALUES (?, ?, ?, ?, ?)',
             [formData.firstname, formData.lastname, formData.email, formData.contactnumber, formData.message]);
+      
+          console.log('Los datos se guardaron exitosamente en la base de datos.');
 
-        res.send('Formulario enviado correctamente');
-    });
+          res.sendFile(process.cwd() + '/client/submitted-form.html');
+      
+        } catch (error) {
+          console.error(error);
+          res.status(500).send('Error interno del servidor');
+        }
+      });
 
     app.listen(port, () => {
         console.log(`El servidor está en ejecución en https://localhost:${port}`);
